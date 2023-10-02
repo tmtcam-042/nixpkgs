@@ -1,4 +1,4 @@
-{ lib, stdenv, fetchFromGitHub, rustPackages, pkg-config, openssl
+{ alsa-plugins, lib, stdenv, fetchFromGitHub, rustPackages, pkg-config, openssl, makeWrapper
 , withALSA ? true, alsa-lib
 , withPulseAudio ? false, libpulseaudio
 , withPortAudio ? false, portaudio
@@ -20,7 +20,7 @@ rustPackages.rustPlatform.buildRustPackage rec {
 
   cargoHash = "sha256-j+2yEtn3D+vNRcY4+NnqSX4xRQIE5Sq7bentxTh6kMI=";
 
-  nativeBuildInputs = [ pkg-config ];
+  nativeBuildInputs = [ pkg-config makeWrapper ];
 
   buildInputs = lib.optionals stdenv.isLinux [ openssl ]
     ++ lib.optional withALSA alsa-lib
@@ -36,6 +36,11 @@ rustPackages.rustPlatform.buildRustPackage rec {
     ++ lib.optional withKeyring "dbus_keyring";
 
   doCheck = false;
+
+  postFixup - lib.optionalString withALSA ''
+    wrapProgram "$out/bin/spotifyd" \
+      --set ALSA_PLUGIN_DIR '${alsa-plugins}/lib/alsa-libg'
+  '';
 
   meta = with lib; {
     description = "An open source Spotify client running as a UNIX daemon";
